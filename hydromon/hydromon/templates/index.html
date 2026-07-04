@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synapse Hydro Dashboard</title>
+
+  <style>
+    :root {
+      --bg: #eef4f1;
+      --panel: #ffffff;
+      --ink: #17211d;
+      --muted: #66756f;
+      --line: #d8e2de;
+      --green: #12715f;
+      --blue: #2456a6;
+      --amber: #b76613;
+      --red: #b42318;
+      --purple: #6b4c9a;
+      --shadow: 0 12px 30px rgba(20, 35, 30, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    header {
+      background: #0f3d36;
+      color: white;
+      padding: 22px 28px;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1 { margin: 0; font-size: 24px; font-weight: 750; }
+
+    .subtitle { margin-top: 5px; color: #cfe4de; font-size: 14px; }
+
+    .header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .status-pill {
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #e8f5f1;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .status-pill.ok { border-color: #35a186; background: rgba(53,161,134,.18); }
+    .status-pill.stale { border-color: #d9922f; background: rgba(217,146,47,.2); }
+    .status-pill.down { border-color: #d9534f; background: rgba(217,83,79,.2); }
+
+    main { width: min(1280px, calc(100% - 32px)); margin: 24px auto; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric-label { color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .metric-value { font-size: 22px; font-weight: 760; }
+    .metric-unit { color: var(--muted); font-size: 12px; margin-left: 3px; }
+    .metric-sub { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+    .top-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .panel h2 { margin: 0 0 14px; font-size: 18px; }
+    .panel h3 { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+
+    .decision { border-left: 6px solid var(--green); background: #f4fbf8; }
+    .decision.warning { border-left-color: var(--amber); background: #fff8ed; }
+    .decision.danger { border-left-color: var(--red); background: #fff5f3; }
+
+    .decision-title { font-size: 28px; font-weight: 800; margin: 2px 0 8px; }
+
+    .command {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #e6efeb;
+      color: #173b34;
+      font-weight: 700;
+      margin: 8px 0 12px;
+    }
+
+    .message { color: var(--muted); line-height: 1.45; margin: 0 0 6px; }
+
+    .alerts-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #fff3e6;
+      border: 1px solid #f0c48a;
+      color: #7a3f00;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .alerts-box.positive {
+      background: #e8f7ef;
+      border-color: #b7dec5;
+      color: #1f4b37;
+    }
+
+    .alerts-box strong { display: block; margin-bottom: 6px; }
+    .alerts-box ul { margin: 0; padding-left: 18px; }
+    .alerts-box:empty { display: none; }
+
+    .dss-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .dss-cards .metric {
+      background: #f9faf9;
+      border: 1px solid #dbe5e1;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: none;
+    }
+
+    .risk-pill, .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .risk-pill.green { background: #13834f; }
+    .risk-pill.yellow { background: #dca53f; }
+    .risk-pill.orange { background: #bf6a1f; }
+    .risk-pill.red { background: #a7241e; }
+
+    .status-chip.Healthy { background: #e3f5ec; color: #176e46; border: 1px solid #b7dfc9; }
+    .status-chip.Warning { background: #fff6e8; color: #8a5b23; border: 1px solid #f2d1a2; }
+    .status-chip.Faulty { background: #fce8e8; color: #8a2424; border: 1px solid #f1c0c0; }
+
+    .sensor-status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .sensor-status-item {
+      background: #ffffff;
+      border: 1px solid #dbe5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .explain-list {
+      margin: 0;
+      padding-left: 18px;
+      color: #33403f;
+      line-height: 1.45;
+    }
+
+    .explain-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #eef7f2;
+      border: 1px solid #cfe2d5;
+      color: #1c3f35;
+    }
+
+    .dss-cards .metric-value {
+      font-size: 26px;
+      color: var(--ink);
+    }
+
+    .dss-cards .metric-sub {
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .form-grid.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 14px;
+      background: var(--green);
+      color: white;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    button:hover { background: #0d5e4f; }
+    button.secondary { background: #dce9e5; color: #143a33; }
+    button.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+    button.small { padding: 7px 10px; font-size: 13px; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    a.button-link {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 11px 14px;
+      background: var(--blue);
+      color: white;
+      font-weight: 750;
+      text-decoration: none;
+      text-align: center;
+    }
+    a.button-link:hover { background: #1c3f7f; }
+
+    .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+
+    .chart { width: 100%; height: 230px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfc; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-weight: 650; }
+    .table-scroll { overflow-x: auto; }
+
+    .technical { margin-top: 18px; }
+
+    pre {
+      margin: 0;
+      background: #111816;
+      color: #dff4ec;
+      border-radius: 8px;
+      padding: 14px;
+      overflow: auto;
+      max-height: 270px;
+      font-size: 12px;
+    }
+
+    .led-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .led-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #e6efeb;
+      color: #173b34;
+    }
+    .led-badge.on { background: #e3f5ec; color: var(--green); }
+    .led-badge.off { background: #f2eef7; color: var(--muted); }
+    .led-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    .btn-toggle-row { display: flex; gap: 8px; }
+    .btn-toggle-row button.active { outline: 2px solid var(--green); outline-offset: 1px; }
+
+    .plantation-summary { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+    .plantation-summary div { flex: 1; min-width: 120px; }
+    .plantation-summary .big { font-size: 22px; font-weight: 800; }
+
+    small.hint { color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 980px) {
+      .grid, .split, .top-bar { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+    /* Make the line chart shorter and more compact */
+    #lineChart { height: 220px !important; max-height: 260px; }
+    .panel .chart { height: 220px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Synapse Hydro</h1>
+      <div class="subtitle">Le cerveau de vos cultures</div>
+    </div>
+    <div class="header-right">
+      <div id="connectionStatus" class="status-pill">En attente des données ESP32</div>
+      <a class="button-link" href="#" onclick="downloadProtectedExport(); return false;">⬇ Exporter (Excel)</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="metrics">
+      <div class="metric">
+        <div class="metric-label">Température intérieure</div>
+        <span id="mTemp" class="metric-value">--</span><span class="metric-unit">°C</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Humidité intérieure</div>
+        <span id="mHumidity" class="metric-value">--</span><span class="metric-unit">%</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Température extérieure</div>
+        <span id="mTempOut" class="metric-value">--</span><span class="metric-unit">°C</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Humidité extérieure</div>
+        <span id="mHumidityOut" class="metric-value">--</span><span class="metric-unit">%</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Température eau</div>
+        <span id="mWaterTemp" class="metric-value">--</span><span class="metric-unit">°C</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">TDS</div>
+        <span id="mTds" class="metric-value">--</span><span class="metric-unit">ppm</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">pH</div>
+        <span id="mPh" class="metric-value">--</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Niveau eau</div>
+        <span id="mWater" class="metric-value">--</span><span class="metric-unit">%</span>
+      </div>
+    </section>
+
+    <section class="top-bar">
+      <div class="panel">
+        <h2>Cycle de culture</h2>
+        <div class="plantation-summary">
+          <div>
+            <div class="metric-label">Date de plantation</div>
+            <div id="plantationDateLabel" class="big">--</div>
+          </div>
+          <div>
+            <div class="metric-label">Jour après plantation (DAP)</div>
+            <div id="plantationDapLabel" class="big">--</div>
+          </div>
+        </div>
+        <label for="plantationDateInput">Modifier la date de plantation</label>
+        <div class="actions" style="margin-top:0;">
+          <input id="plantationDateInput" type="date" style="max-width:220px;">
+          <button class="small" onclick="savePlantationDate()">Enregistrer</button>
+        </div>
+        <small class="hint">Le nombre de jours de croissance (utilisé par la logique floue) est calculé automatiquement à partir de cette date - il n'est plus saisi manuellement.</small>
+      </div>
+
+      <div class="panel">
+        <h2>Éclairage (LED)</h2>
+        <div class="led-row">
+          <span>Mode :</span>
+          <div class="btn-toggle-row">
+            <button id="ledModeAutoBtn" class="small secondary" onclick="setLedMode('auto')">Automatique</button>
+            <button id="ledModeManualBtn" class="small secondary" onclick="setLedMode('manual')">Manuel</button>
+          </div>
+          <span id="ledBadge" class="led-badge off"><span class="led-dot"></span><span id="ledBadgeText">--</span></span>
+        </div>
+
+        <div id="ledManualControls" class="btn-toggle-row" style="margin-bottom:14px; display:none;">
+          <button id="ledOnBtn" class="small" onclick="setLedManualState(true)">Allumer</button>
+          <button id="ledOffBtn" class="small secondary" onclick="setLedManualState(false)">Éteindre</button>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr auto;">
+          <div>
+            <label>Heure ON (auto)</label>
+            <input id="ledOnHour" type="number" min="0" max="23" step="1">
+          </div>
+          <div>
+            <label>Heure OFF (auto)</label>
+            <input id="ledOffHour" type="number" min="0" max="23" step="1">
+          </div>
+          <div style="align-self:end;">
+            <button class="small" onclick="saveLedSchedule()">Enregistrer horaire</button>
+          </div>
+        </div>
+        <small class="hint">Reflète l'état réellement rapporté par l'ESP32 (relais physique) lors de la dernière mesure reçue.</small>
+      </div>
+    </section>
+
+    <section class="grid" style="display:grid; grid-template-columns: 1.05fr .95fr; gap: 18px;">
+      <div style="display:grid; gap: 18px;">
+        <div class="panel decision" id="decisionPanel">
+          <h2>Décision IA</h2>
+          <div id="decisionText" class="decision-title">Aucune donnée</div>
+          <div id="commandText" class="command">--</div>
+          <p id="userMessage" class="message">Le dashboard attend une mesure de l’ESP32 ou un test manuel.</p>
+          <p id="userAction" class="message"></p>
+          <div id="alertsBox" class="alerts-box"></div>
+        </div>
+
+        <div class="panel" id="dssPanel">
+          <h2>Plant Health Score</h2>
+          <div class="dss-cards">
+            <div class="metric">
+              <div class="metric-label">Score Santé</div>
+              <div id="healthScore" class="metric-value">--</div>
+              <div id="healthLabel" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Score eau</div>
+              <div id="waterQualityScore" class="metric-value">--</div>
+              <div id="waterQualityLabel" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Climat stable</div>
+              <div id="climateStabilityScore" class="metric-value">--</div>
+              <div id="climateStabilityLabel" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Risque IA</div>
+              <div id="riskLevel" class="metric-value">--</div>
+              <div id="riskBadge" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Niveau nutriments</div>
+              <div id="nutrientBalanceScore" class="metric-value">--</div>
+              <div id="nutrientBalanceLabel" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Confiance IA</div>
+              <div id="aiConfidence" class="metric-value">--</div>
+              <div id="anomalySeverity" class="metric-sub">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Récolte estimée</div>
+              <div id="harvestRemaining" class="metric-value">--</div>
+              <div id="harvestConfidence" class="metric-sub">Confiance --</div>
+            </div>
+          </div>
+          <div class="sensor-status-grid" id="sensorStatusGrid"></div>
+          <div id="sensorAlertsBox" class="alerts-box"></div>
+          <div id="recommendationsBox" class="alerts-box"></div>
+          <div id="aiExplanationBox" class="explain-box"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Test manuel</h2>
+
+        <div class="form-grid">
+          <div>
+            <label>Température air intérieure (°C)</label>
+            <input id="temperature" type="number" step="0.1" value="28">
+          </div>
+          <div>
+            <label>Humidité intérieure (%)</label>
+            <input id="humidity" type="number" step="0.1" value="65">
+          </div>
+          <div>
+            <label>Température air extérieure (°C) — optionnel</label>
+            <input id="temperature_outside" type="number" step="0.1" placeholder="ex: 31">
+          </div>
+          <div>
+            <label>Humidité extérieure (%) — optionnel</label>
+            <input id="humidity_outside" type="number" step="0.1" placeholder="ex: 45">
+          </div>
+          <div>
+            <label>Température de l'eau (°C) — optionnel</label>
+            <input id="water_temperature" type="number" step="0.1" placeholder="ex: 21">
+          </div>
+          <div>
+            <label>TDS (ppm)</label>
+            <input id="tds" type="number" step="1" value="501">
+          </div>
+          <div>
+            <label>pH</label>
+            <input id="ph" type="number" step="0.1" value="6.0">
+          </div>
+          <div>
+            <label>Niveau eau (%)</label>
+            <input id="water_level" type="number" step="1" value="70">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button onclick="sendManual()">Analyser</button>
+          <button class="secondary" onclick="refreshEsp32()">Actualiser ESP32</button>
+        </div>
+        <small class="hint">Le nombre de jours de croissance (DAP) est calculé automatiquement depuis la date de plantation.</small>
+      </div>
+    </section>
+
+    <section class="split">
+      <div class="panel">
+        <h2>Évolution TDS / pH / Temp. eau</h2>
+        <canvas id="lineChart" class="chart"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Dernières mesures</h2>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Temps</th>
+                <th>T° in</th>
+                <th>T° out</th>
+                <th>T° eau</th>
+                <th>TDS</th>
+                <th>pH</th>
+                <th>Eau %</th>
+                <th>LED</th>
+                <th>Décision</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    let lastHistory = [];
+    let lastLedSettings = { mode: "auto", manual_state: false, on_hour: 6, off_hour: 20 };
+    let lastResultTimestamp = null;
+    let lineChart = null;
+
+    function valueOrDash(value, digits = 1) {
+      if (value === undefined || value === null || Number.isNaN(value)) {
+        return "--";
+      }
+      return Number(value).toFixed(digits);
+    }
+
+    function boolLabel(value) {
+      if (value === true) return "ON";
+      if (value === false) return "OFF";
+      return "--";
+    }
+
+    function panelClass(decision) {
+      if (decision === "Healthy") return "panel decision";
+      if (decision === "Safety Alert" || decision === "Sensor Alert") return "panel decision danger";
+      return "panel decision warning";
+    }
+
+    // -------------------- Plantation date --------------------
+
+    async function loadPlantationInfo() {
+      try {
+        const response = await fetch("/api/plantation-date");
+        const info = await response.json();
+        document.getElementById("plantationDateLabel").textContent = info.plantation_date || "--";
+        document.getElementById("plantationDapLabel").textContent =
+          info.growth_days !== undefined ? "J+" + info.growth_days : "--";
+        document.getElementById("plantationDateInput").value = info.plantation_date || "";
+      } catch (error) {
+        document.getElementById("plantationDateLabel").textContent = "Erreur";
+      }
+    }
+
+    async function savePlantationDate() {
+      const value = document.getElementById("plantationDateInput").value;
+      if (!value) return;
+
+      try {
+        const response = await fetch("/api/plantation-date", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plantation_date: value })
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+          alert(result.error || "Erreur lors de l'enregistrement de la date de plantation.");
+          return;
+        }
+
+        document.getElementById("plantationDateLabel").textContent = result.plantation_date;
+        document.getElementById("plantationDapLabel").textContent = "J+" + result.growth_days;
+      } catch (error) {
+        alert("Impossible de contacter le serveur.");
+      }
+    }
+
+    // -------------------- LED automation --------------------
+
+    function renderLedControls() {
+      const isAuto = lastLedSettings.mode === "auto";
+
+      document.getElementById("ledModeAutoBtn").classList.toggle("active", isAuto);
+      document.getElementById("ledModeManualBtn").classList.toggle("active", !isAuto);
+      document.getElementById("ledManualControls").style.display = isAuto ? "none" : "flex";
+
+      document.getElementById("ledOnBtn").classList.toggle("active", !isAuto && lastLedSettings.manual_state === true);
+      document.getElementById("ledOffBtn").classList.toggle("active", !isAuto && lastLedSettings.manual_state === false);
+
+      document.getElementById("ledOnHour").value = lastLedSettings.on_hour;
+      document.getElementById("ledOffHour").value = lastLedSettings.off_hour;
+    }
+
+    async function loadLedInfo() {
+      try {
+        const response = await fetch("/api/led");
+        lastLedSettings = await response.json();
+        renderLedControls();
+      } catch (error) {
+        // keep previous UI state on failure
+      }
+    }
+
+    async function pushLedSettings(payload) {
+      try {
+        const response = await fetch("/api/led", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+          alert(result.error || "Erreur lors de la mise à jour de l'éclairage.");
+          return;
+        }
+
+        lastLedSettings = result;
+        renderLedControls();
+      } catch (error) {
+        alert("Impossible de contacter le serveur.");
+      }
+    }
+
+    function setLedMode(mode) {
+      pushLedSettings({ mode: mode });
+    }
+
+    function setLedManualState(state) {
+      pushLedSettings({ mode: "manual", manual_state: state });
+    }
+
+    function saveLedSchedule() {
+      pushLedSettings({
+        on_hour: parseInt(document.getElementById("ledOnHour").value, 10),
+        off_hour: parseInt(document.getElementById("ledOffHour").value, 10)
+      });
+    }
+
+    function updateLedBadgeFromReading(sensor) {
+      const badge = document.getElementById("ledBadge");
+      const text = document.getElementById("ledBadgeText");
+
+      if (sensor.led_on === true) {
+        badge.className = "led-badge on";
+        text.textContent = "LED ON" + (sensor.led_mode ? " (" + sensor.led_mode + ")" : "");
+      } else if (sensor.led_on === false) {
+        badge.className = "led-badge off";
+        text.textContent = "LED OFF" + (sensor.led_mode ? " (" + sensor.led_mode + ")" : "");
+      } else {
+        badge.className = "led-badge off";
+        text.textContent = "État inconnu";
+      }
+    }
+
+    // -------------------- Dashboard rendering --------------------
+
+    function updateDashboard(result) {
+      const sensor = result.sensor_data || {};
+
+      document.getElementById("mTemp").textContent = valueOrDash(sensor.temperature);
+      document.getElementById("mHumidity").textContent = valueOrDash(sensor.humidity);
+      document.getElementById("mTempOut").textContent = valueOrDash(sensor.temperature_outside);
+      document.getElementById("mHumidityOut").textContent = valueOrDash(sensor.humidity_outside);
+      document.getElementById("mWaterTemp").textContent = valueOrDash(sensor.water_temperature);
+      document.getElementById("mTds").textContent = valueOrDash(sensor.tds, 0);
+      document.getElementById("mPh").textContent = valueOrDash(sensor.ph, 2);
+      document.getElementById("mWater").textContent = valueOrDash(sensor.water_level, 0);
+
+      if (sensor.plantation_date) {
+        document.getElementById("plantationDateLabel").textContent = sensor.plantation_date;
+      }
+      if (sensor.growth_days !== undefined) {
+        document.getElementById("plantationDapLabel").textContent = "J+" + sensor.growth_days;
+      }
+
+      updateLedBadgeFromReading(sensor);
+
+      document.getElementById("decisionPanel").className = panelClass(result.final_decision);
+
+      const wholeDecision = result.final_decision || "--";
+      const commandText = result.actuator_command || "--";
+      const userMessage = result.user_message || "";
+      const userAction = result.user_action || "";
+
+      document.getElementById("decisionText").textContent = wholeDecision;
+      document.getElementById("commandText").textContent = commandText;
+      document.getElementById("userMessage").textContent = userMessage;
+      document.getElementById("userAction").textContent = userAction;
+
+      document.getElementById("healthScore").textContent = result.plant_health_score !== undefined ? result.plant_health_score : "--";
+      document.getElementById("healthLabel").textContent = result.plant_health_label || "--";
+      document.getElementById("waterQualityScore").textContent = result.water_quality_score !== undefined ? result.water_quality_score : "--";
+      document.getElementById("waterQualityLabel").textContent = result.water_quality_label || "--";
+      document.getElementById("climateStabilityScore").textContent = result.climate_stability_score !== undefined ? result.climate_stability_score : "--";
+      document.getElementById("climateStabilityLabel").textContent = result.climate_stability_label || "--";
+      document.getElementById("riskLevel").textContent = result.risk_level || "--";
+      const riskBadge = document.getElementById("riskBadge");
+      if (result.risk_color) {
+        riskBadge.textContent = result.recommendation_priority ? "Priorité " + result.recommendation_priority : "--";
+        riskBadge.className = "metric-sub risk-pill " + result.risk_color;
+      } else {
+        riskBadge.textContent = result.recommendation_priority ? "Priorité " + result.recommendation_priority : "--";
+        riskBadge.className = "metric-sub";
+      }
+      document.getElementById("nutrientBalanceScore").textContent = result.nutrient_balance_score !== undefined ? result.nutrient_balance_score : "--";
+      document.getElementById("nutrientBalanceLabel").textContent = result.nutrient_balance_label || "--";
+      document.getElementById("aiConfidence").textContent = result.ai_confidence !== undefined ? result.ai_confidence + "%" : "--";
+      document.getElementById("anomalySeverity").textContent = result.severity || "--";
+      document.getElementById("harvestRemaining").textContent = result.estimated_harvest_remaining !== undefined ? result.estimated_harvest_remaining + " jours" : "--";
+      document.getElementById("harvestConfidence").textContent = result.estimated_harvest_confidence !== undefined ? "Confiance " + result.estimated_harvest_confidence + "%" : "Confiance --";
+
+      const statusGrid = document.getElementById("sensorStatusGrid");
+      statusGrid.innerHTML = "";
+      const sensorStatus = result.sensor_status || {};
+      const labels = {
+        temperature: "Température air",
+        humidity: "Humidité int.",
+        ph: "pH",
+        tds: "TDS",
+        water_temperature: "Température eau",
+        water_level: "Niveau eau"
+      };
+      Object.entries(sensorStatus).forEach(([key, status]) => {
+        const item = document.createElement("div");
+        item.className = "sensor-status-item";
+        item.innerHTML = `<span>${labels[key] || key}</span><span class="status-chip ${status}">${status}</span>`;
+        statusGrid.appendChild(item);
+      });
+
+      const alerts = [];
+      const sensorAlerts = result.sensor_alerts || [];
+      const recommendations = result.recommendations || [];
+
+      sensorAlerts.forEach(alert => {
+        alerts.push({ title: alert.title, message: alert.message });
+      });
+
+      const alertsBox = document.getElementById("alertsBox");
+      if (result.all_alerts && result.all_alerts.length > 0) {
+        alertsBox.innerHTML =
+          "<strong>Alertes générales :</strong><ul>" +
+          result.all_alerts.map(alert => "<li>" + alert + "</li>").join("") +
+          "</ul>";
+      } else {
+        alertsBox.innerHTML =
+          "<strong>Etat normal :</strong><ul><li>Aucune alerte générale détectée.</li></ul>";
+      }
+
+      const sensorAlertsBox = document.getElementById("sensorAlertsBox");
+      if (sensorAlerts.length > 0) {
+        sensorAlertsBox.classList.remove("positive");
+        sensorAlertsBox.innerHTML =
+          "<strong>Alertes capteurs / modèle :</strong><ul>" +
+          sensorAlerts.map(alert => "<li><strong>" + alert.title + "</strong> : " + alert.message + "</li>").join("") +
+          "</ul>";
+      } else {
+        sensorAlertsBox.classList.add("positive");
+        sensorAlertsBox.innerHTML =
+          "<strong>Capteurs stables :</strong><ul><li>Aucune alerte détectée pour les capteurs ou le modèle.</li></ul>";
+      }
+
+      const recommendationsBox = document.getElementById("recommendationsBox");
+      if (recommendations.length > 0) {
+        recommendationsBox.classList.remove("positive");
+        recommendationsBox.innerHTML =
+          "<strong>Recommandations :</strong><ul>" +
+          recommendations.map(rec => "<li><strong>" + rec.title + "</strong> : " + rec.message + "</li>").join("") +
+          "</ul>";
+      } else {
+        recommendationsBox.classList.add("positive");
+        recommendationsBox.innerHTML =
+          "<strong>Recommandations :</strong><ul><li>Aucune action requise.</li></ul>";
+      }
+
+      const explanationBox = document.getElementById("aiExplanationBox");
+      const reasons = result.ai_confidence_reasons || [];
+      if (reasons.length > 0) {
+        explanationBox.innerHTML =
+          "<strong>Explication IA :</strong><ul class='explain-list'>" +
+          reasons.map(reason => "<li>" + reason + "</li>").join("") +
+          "</ul>";
+      } else {
+        explanationBox.innerHTML =
+          "<strong>Explication IA :</strong><p>Aucune explication disponible.</p>";
+      }
+
+      lastResultTimestamp = result.timestamp || null;
+      refreshConnectionStatus();
+    }
+
+    function refreshConnectionStatus() {
+      const pill = document.getElementById("connectionStatus");
+
+      if (!lastResultTimestamp) {
+        pill.className = "status-pill";
+        pill.textContent = "En attente des données ESP32";
+        return;
+      }
+
+      const last = new Date(lastResultTimestamp);
+      const ageSeconds = (Date.now() - last.getTime()) / 1000;
+
+      if (ageSeconds < 15) {
+        pill.className = "status-pill ok";
+      } else if (ageSeconds < 60) {
+        pill.className = "status-pill stale";
+      } else {
+        pill.className = "status-pill down";
+      }
+
+      pill.textContent = "Dernière mesure : " + lastResultTimestamp;
+    }
+
+    async function downloadProtectedExport() {
+      const password = prompt("Entrez le mot de passe pour exporter le fichier Excel :");
+      if (!password) {
+        return;
+      }
+      const token = encodeURIComponent(password.trim());
+      if (!token) {
+        return;
+      }
+      window.location.href = "/api/export/excel?token=" + token;
+    }
+
+    async function sendManual() {
+      const optionalFloat = (id) => {
+        const raw = document.getElementById(id).value;
+        return raw === "" ? null : parseFloat(raw);
+      };
+
+      const payload = {
+        temperature: parseFloat(document.getElementById("temperature").value),
+        humidity: parseFloat(document.getElementById("humidity").value),
+        temperature_outside: optionalFloat("temperature_outside"),
+        humidity_outside: optionalFloat("humidity_outside"),
+        water_temperature: optionalFloat("water_temperature"),
+        tds: parseFloat(document.getElementById("tds").value),
+        ph: parseFloat(document.getElementById("ph").value),
+        water_level: parseFloat(document.getElementById("water_level").value)
+      };
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          document.getElementById("decisionText").textContent = "Erreur";
+          document.getElementById("commandText").textContent = "--";
+          document.getElementById("userMessage").textContent = result.error || "Erreur API";
+          document.getElementById("userAction").textContent = "Vérifiez la requête envoyée.";
+          return;
+        }
+
+        updateDashboard(result);
+        await refreshHistory();
+
+      } catch (error) {
+        document.getElementById("decisionText").textContent = "Erreur connexion";
+        document.getElementById("commandText").textContent = "--";
+        document.getElementById("userMessage").textContent = "Impossible de contacter Flask.";
+        document.getElementById("userAction").textContent = "Vérifiez que le serveur Flask est démarré.";
+        }
+    }
+
+    function refreshEsp32() {
+      refreshLatest();
+      refreshHistory();
+    }
+
+    async function refreshLatest() {
+      try {
+        const response = await fetch("/api/latest");
+        const result = await response.json();
+
+        if (result.status === "waiting") {
+          document.getElementById("connectionStatus").textContent = result.message;
+          document.getElementById("connectionStatus").className = "status-pill";
+          return;
+        }
+
+        updateDashboard(result);
+
+      } catch (error) {
+        document.getElementById("connectionStatus").textContent = "API Flask non joignable";
+        document.getElementById("connectionStatus").className = "status-pill down";
+      }
+    }
+
+    async function refreshHistory() {
+      try {
+        const response = await fetch("/api/history");
+        lastHistory = await response.json();
+        renderHistoryTable();
+        updateLineChart();
+      } catch (error) {
+        lastHistory = [];
+      }
+    }
+
+    function renderHistoryTable() {
+      const body = document.getElementById("historyBody");
+      body.innerHTML = "";
+
+      lastHistory.slice(-8).reverse().forEach(item => {
+        const sensor = item.sensor_data || {};
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${(item.timestamp || "").split("T").pop() || "--"}</td>
+          <td>${valueOrDash(sensor.temperature)}</td>
+          <td>${valueOrDash(sensor.temperature_outside)}</td>
+          <td>${valueOrDash(sensor.water_temperature)}</td>
+          <td>${valueOrDash(sensor.tds, 0)}</td>
+          <td>${valueOrDash(sensor.ph, 2)}</td>
+          <td>${valueOrDash(sensor.water_level, 0)}</td>
+          <td>${boolLabel(sensor.led_on)}</td>
+          <td>${item.final_decision || "--"}</td>
+        `;
+
+        body.appendChild(row);
+      });
+    }
+
+    function updateLineChart() {
+      // Show a compact recent window: last 12 samples
+      const chartData = lastHistory.slice(-12);
+      const labels = chartData.map(item => (item.timestamp || "").split("T").pop() || "-");
+      const tds = chartData.map(d => Number((d.sensor_data || {}).tds || 0));
+      const ph = chartData.map(d => Number((d.sensor_data || {}).ph || 0) * 100);
+      const waterTemp = chartData.map(d => {
+        const value = (d.sensor_data || {}).water_temperature;
+        return value === null || value === undefined ? null : Number(value) * 10;
+      });
+
+      if (!lineChart) {
+        const ctx = document.getElementById("lineChart").getContext("2d");
+        lineChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "TDS",
+                data: tds,
+                borderColor: "#2456a6",
+                backgroundColor: "rgba(36, 86, 166, 0.15)",
+                tension: 0.2,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: true,
+              },
+              {
+                label: "pH x100",
+                data: ph,
+                borderColor: "#b76613",
+                backgroundColor: "rgba(183, 102, 19, 0.15)",
+                tension: 0.2,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: true,
+              },
+              {
+                label: "T.eau x10",
+                data: waterTemp,
+                borderColor: "#6b4c9a",
+                backgroundColor: "rgba(107, 76, 154, 0.15)",
+                tension: 0.2,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: true,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
+            elements: {
+              line: { borderWidth: 2 },
+              point: { hitRadius: 6 }
+            },
+            plugins: {
+              legend: {
+                position: "top",
+                labels: {
+                  color: "#33403f"
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.formattedValue}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: "#55686e" },
+                grid: { color: "rgba(210, 226, 237, 0.35)" }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: "#55686e" },
+                grid: { color: "rgba(210, 226, 237, 0.35)" }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                ticks: { color: "#55686e" },
+                grid: { color: "rgba(210, 226, 237, 0.35)" }
+              },
+              x: {
+                ticks: { color: "#55686e" },
+                grid: { color: "rgba(210, 226, 237, 0.15)" }
+              }
+            }
+          }
+        });
+      } else {
+        lineChart.data.labels = labels;
+        lineChart.data.datasets[0].data = tds;
+        lineChart.data.datasets[1].data = ph;
+        lineChart.data.datasets[2].data = waterTemp;
+        // compute sensible y-axis bounds to avoid excessive vertical stretching
+        const numericVals = [].concat(tds, ph, waterTemp.filter(v => v !== null));
+        const minVal = Math.min(...numericVals, 0);
+        const maxVal = Math.max(...numericVals, 1);
+        const range = Math.max( (maxVal - minVal), 1 );
+        const pad = range * 0.15;
+        lineChart.options.scales = lineChart.options.scales || {};
+        lineChart.options.scales.y = lineChart.options.scales.y || {};
+        lineChart.options.scales.y.min = minVal - pad;
+        lineChart.options.scales.y.max = maxVal + pad;
+        lineChart.update();
+      }
+    }
+
+    // Data refresh is now user-driven: manual analyse or ESP32 refresh.
+    setInterval(refreshConnectionStatus, 5000);
+
+    loadPlantationInfo();
+    loadLedInfo();
+    refreshLatest();
+    refreshHistory();
+  </script>
+</body>
+</html>
