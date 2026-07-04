@@ -27,6 +27,12 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     # Import models so that they are registered with SQLAlchemy / Alembic.
     from . import db_models  # noqa: F401
 
+    with app.app_context():
+        db.create_all()
+        from .plantation import get_plantation_config
+
+        get_plantation_config()
+
     # Register blueprints.
     from .routes.dashboard import dashboard_bp
     from .routes.api import api_bp
